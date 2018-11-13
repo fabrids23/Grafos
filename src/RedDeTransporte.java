@@ -212,7 +212,7 @@ public class RedDeTransporte<T> implements Grafo{
                 }
             }
             if(!visitados[1]){
-                corte1 = !corte1;
+                corte1 = true;
                 break;
             }
                 auxList.add(1);
@@ -248,7 +248,6 @@ public class RedDeTransporte<T> implements Grafo{
                 padres = new int[cantVertices];
                 visitados = new boolean[cantVertices];
                 auxList = new ArrayList<>(1);
-                flujo = 0;
             }
         return flujoMax;
 
