@@ -210,7 +210,6 @@ public class RedDeTransporte<T> implements Grafo{
                         }
                     }
                 }
-
             }
             if(!visitados[1]){
                 corte1 = !corte1;
@@ -238,7 +237,7 @@ public class RedDeTransporte<T> implements Grafo{
                 for (int i = auxList.size() - 1; i > 0; i--) {
                     int lado1 = auxList.get(i);
                     int lado2 = auxList.get(i-1);
-                    agregarFlujoLado(auxList.get(i),auxList.get(i - 1), flujo);
+                    agregarFlujoLado(lado1,lado2, flujo + obtenerFlujo(lado1,lado2));
                 }
 
                 flujoMax += flujo;
