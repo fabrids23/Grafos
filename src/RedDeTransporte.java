@@ -1,6 +1,4 @@
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 
 public class RedDeTransporte<T> implements Grafo{
 
@@ -9,7 +7,7 @@ public class RedDeTransporte<T> implements Grafo{
     private int[][] matrizCapacidad = new int[2][2];
     private int[][] matrizFlujo = new int[2][2];
     private int cantLados = 0;
-    private int cantVertices = 0;
+    private int cantVertices = 2;
 
     public RedDeTransporte(T fuente, T sumidero){
         this.fuente = fuente;
@@ -28,8 +26,8 @@ public class RedDeTransporte<T> implements Grafo{
 
     private int[][] agrandarMatriz(int cantVertices) {
         int[][] nuevaMatriz = new int[cantVertices][cantVertices];
-        for (int i = 0; i < cantVertices; i++) {
-            for (int j = 0; j < cantVertices; j++) {
+        for (int i = 0; i < cantVertices-1; i++) {
+            for (int j = 0; j < cantVertices-1; j++) {
                 nuevaMatriz[i][j] = matrizCapacidad[i][j];
             }
         }
@@ -52,11 +50,9 @@ public class RedDeTransporte<T> implements Grafo{
             throw new IllegalArgumentException("El flujo no puede ser mayor a la capacidad");
         }
         matrizFlujo[salida][destino] = flujo;
-        if(!chequearConservacion(salida) || !chequearConservacion(destino)){
-            throw new IllegalArgumentException("No se cumple con la propiedad de conservacion");
-        }
-    }
 
+    }
+    /*
     private boolean chequearConservacion(int indice) {
         if(indice == 0 || indice == 1){
             //Son la fuente o el sumidero, por lo tanto no hace falta cheqeuar la conservacion.
@@ -70,6 +66,7 @@ public class RedDeTransporte<T> implements Grafo{
         }
         return flujoEntrada == flujoSalida;
     }
+    */
 
     public int obtenerCapacidad(int salida, int destino){
         return matrizCapacidad[salida][destino];
@@ -188,13 +185,98 @@ public class RedDeTransporte<T> implements Grafo{
         return sucesores;
     }
 
-    public void FordFulkerson(){
+    public int fordFulkerson(){
         matrizFlujo = new int[cantVertices][cantVertices];
-        HashMap<T, Integer> matrizFF = new HashMap<>();
-
+        int flujoMax = 0;
+        Queue<Integer> queue = new PriorityQueue<>();
+        int[] visitados = new int[cantVertices];
+        int[] padres = new int[cantVertices];
+        List<Integer> auxList = new ArrayList<>();
+        Integer prev = null;
+        boolean corte1 = false;
+        boolean corte2 = false;
+        while(!corte1) {
+            queue.add(0);
+            int j = 0;
+            while (queue.size() != 0) {
+                Integer aux = queue.poll();
+                if (prev == null) {
+                    padres[j] = -1;
+                } else {
+                    padres[j] = prev;
+                }
+                visitados[j] = aux;
+                prev = aux;
+                for (int i = 0; i < cantVertices; i++) {
+                    if (hayLado((int) aux, (int) i)) {
+                        boolean checkearSiEstaVisitado = false;
+                        boolean saturado = false;
+                        for (int k = 0; k < visitados.length; k++) {
+                            if (visitados[k] == i) {
+                                checkearSiEstaVisitado = true;
+                            }
+                            if(estaSaturado(prev,k)){
+                                saturado = true;
+                            }
+                        }
+                        if (!checkearSiEstaVisitado && !saturado) {
+                            queue.add(i);
+                        }
+                    }
+                }
+                j++;
+                if(visitados[visitados.length-1] != 1){
+                    corte1 = true;
+                    corte2 = true;
+                }
+            }
+            j = 0;
+            while(!corte2) {
+                int indice = cantVertices - 1;
+                while (prev != -1) {
+                    auxList.add(visitados[indice]);
+                    indice = padres[indice];
+                }
+                List<Integer> flujos = new ArrayList<>();
+                for (int n = auxList.size() - 1; n == 0; n--) {
+                    flujos.add((redResidual(auxList.get(n), auxList.get(n - 1))));
+                }
+                int flujo = flujos.get(0);
+                for (int m = 1; m < flujos.size() - 1; m++) {
+                    flujo = Math.min(flujo, flujos.get(m));
+                }
+                flujoMax += flujo;
+                for (int p = auxList.size() - 1; p == 0; p--) {
+                    matrizFlujo[auxList.get(p)][auxList.get(p - 1)] = flujo;
+                }
+            }
+            padres = null;
+            visitados = null;
+        }
+        return flujoMax;
     }
 
     public int redResidual(int salida, int destino){
-        return obtenerCapacidad(salida,destino)
+        return obtenerCapacidad(salida,destino) - obtenerFlujo(salida,destino);
+    }
+
+    public int[][] matrizCapacidad() {
+        return matrizCapacidad;
+    }
+
+    public int[][] matrizFlujo() {
+        return matrizFlujo;
+    }
+
+    public void imprimirMatriz(int[][] matriz){
+        for (int x=0; x < matriz.length; x++)
+        {
+            for (int y=0; y < matriz[x].length; y++)
+            {
+                System.out.print(" | ");System.out.print (matriz[x][y]); System.out.print(" | ");
+            }
+            System.out.println();
+
+        }
     }
 }
