@@ -36,7 +36,7 @@ public class RedDeTransporte<T> implements Grafo{
 
     @Override
     public void agregarCapacidadLado(int salida, int destino, int capacity) {
-        if(matrizCapacidad[salida][destino] > 0){
+        if(matrizCapacidad[salida][destino] == 0){
             cantLados++;
         }
         matrizCapacidad[salida][destino] = capacity;
@@ -126,7 +126,7 @@ public class RedDeTransporte<T> implements Grafo{
             }
 
             matrizFlujo = nuevaMatriz;
-
+            vertices.remove(indice);
             cantVertices--;
         }
 
@@ -175,55 +175,52 @@ public class RedDeTransporte<T> implements Grafo{
     }
 
     @Override
-    public List<T> obtenerSucesores(int indice) {
-        List<T> sucesores = new ArrayList<>();
+    public List<Integer> obtenerSucesores(int indice) {
+        List<Integer> sucesores = new ArrayList<>();
         for (int i = 0; i < cantVertices; i++) {
             if(obtenerCapacidad(indice,i) > 0){
-                sucesores.add((T) obtenerVertice(i));
+                sucesores.add(i);
             }
         }
         return sucesores;
     }
 
     public int fordFulkerson() {
+
         matrizFlujo = new int[cantVertices][cantVertices];
         int flujoMax = 0;
         ArrayList<Integer> auxList = new ArrayList<>(1);
         Queue<Integer> queue = new PriorityQueue<>();
         boolean[] visitados = new boolean[cantVertices];
         int[] padres = new int[cantVertices];
-        Integer prev = null;
         boolean corte1 = false;
-        int q = 0;
         while (!corte1) {
             queue.add(0);
             visitados[0] = true;
-            int j = 1;
             while (queue.size() != 0) {
                 padres[0] = -1;
-                Integer aux = queue.poll();
-                for (int i = 0; i < cantVertices; i++) {
-                    if (hayLado((int) aux, (int) i)) {
-                        boolean skip = false;
-                        for (int k = 0; k < cantVertices - 1; k++) {
-                            boolean a = estaSaturado(aux,i);
-                            if (estaSaturado(aux, i) || visitados[i]) {
-                                skip = true;
-                            }
-                            if(!skip){
-                                visitados[i] = true;
-                                padres[j++] = aux;
-                                queue.add(i);
-                            }
+                while(queue.size() > 0) {
+                    Integer aux = queue.poll();
+                    List<Integer> sucesores = obtenerSucesores(aux);
+                    for (int i : sucesores) {
+                        if(!visitados[i] && !estaSaturado(aux,i)) {
+                            queue.add(i);
+                            visitados[i] = true;
+                            padres[i] = aux;
                         }
                     }
                 }
+
+            }
+            if(!visitados[1]){
+                corte1 = !corte1;
+                break;
             }
                 auxList.add(1);
-                int indice = padres[(padres.length) - 1];
+                int indice = padres[1];
                 while (indice != 0) {
                     auxList.add(indice);
-                    indice = padres[indice - 1];
+                    indice = padres[indice];
                 }
                 auxList.add(0);
                 List<Integer> flujos = new ArrayList<>(auxList.size() - 1);
@@ -234,11 +231,13 @@ public class RedDeTransporte<T> implements Grafo{
 
                 int flujo = flujos.get(0);
 
-                for (int m = 1; m < flujos.size() - 1; m++) {
+                for (int m = 1; m < flujos.size(); m++) {
                     flujo = Math.min(flujo, flujos.get(m));
                 }
 
                 for (int i = auxList.size() - 1; i > 0; i--) {
+                    int lado1 = auxList.get(i);
+                    int lado2 = auxList.get(i-1);
                     agregarFlujoLado(auxList.get(i),auxList.get(i - 1), flujo);
                 }
 
@@ -250,12 +249,16 @@ public class RedDeTransporte<T> implements Grafo{
                 padres = new int[cantVertices];
                 visitados = new boolean[cantVertices];
                 auxList = new ArrayList<>(1);
+                flujo = 0;
             }
         return flujoMax;
+
     }
 
+
     public int redResidual(int salida, int destino){
-        return obtenerCapacidad(salida,destino) - obtenerFlujo(salida,destino);
+        int a = obtenerCapacidad(salida,destino) - obtenerFlujo(salida,destino);
+        return a;
     }
 
     public int[][] matrizCapacidad() {
@@ -278,3 +281,4 @@ public class RedDeTransporte<T> implements Grafo{
         }
     }
 }
+
