@@ -43,7 +43,7 @@ public class RedDeTransporte<T> implements Grafo{
     }
 
     public void agregarFlujoLado(int salida, int destino, int flujo) {
-        if(hayLado(salida,destino)){
+        if(!hayLado(salida,destino)){
             cantLados++;
         }
         if(flujo > obtenerCapacidad(salida,destino)){
@@ -77,7 +77,7 @@ public class RedDeTransporte<T> implements Grafo{
     }
 
     public boolean estaSaturado(int salida, int destino){
-        return (obtenerFlujo(salida, destino) == obtenerCapacidad(salida,destino)) && obtenerCapacidad(salida,destino) != 0;
+        return (obtenerFlujo(salida, destino) == obtenerCapacidad(salida,destino)) && (obtenerCapacidad(salida,destino) != 0);
     }
 
     public void mostrarCaminosSaturados(){
@@ -185,74 +185,72 @@ public class RedDeTransporte<T> implements Grafo{
         return sucesores;
     }
 
-    public int fordFulkerson(){
+    public int fordFulkerson() {
         matrizFlujo = new int[cantVertices][cantVertices];
         int flujoMax = 0;
+        ArrayList<Integer> auxList = new ArrayList<>(1);
         Queue<Integer> queue = new PriorityQueue<>();
-        int[] visitados = new int[cantVertices];
+        boolean[] visitados = new boolean[cantVertices];
         int[] padres = new int[cantVertices];
-        List<Integer> auxList = new ArrayList<>();
         Integer prev = null;
         boolean corte1 = false;
-        boolean corte2 = false;
-        while(!corte1) {
+        int q = 0;
+        while (!corte1) {
             queue.add(0);
-            int j = 0;
+            visitados[0] = true;
+            int j = 1;
             while (queue.size() != 0) {
+                padres[0] = -1;
                 Integer aux = queue.poll();
-                if (prev == null) {
-                    padres[j] = -1;
-                } else {
-                    padres[j] = prev;
-                }
-                visitados[j] = aux;
-                prev = aux;
                 for (int i = 0; i < cantVertices; i++) {
                     if (hayLado((int) aux, (int) i)) {
-                        boolean checkearSiEstaVisitado = false;
-                        boolean saturado = false;
-                        for (int k = 0; k < visitados.length; k++) {
-                            if (visitados[k] == i) {
-                                checkearSiEstaVisitado = true;
+                        boolean skip = false;
+                        for (int k = 0; k < cantVertices - 1; k++) {
+                            boolean a = estaSaturado(aux,i);
+                            if (estaSaturado(aux, i) || visitados[i]) {
+                                skip = true;
                             }
-                            if(estaSaturado(prev,k)){
-                                saturado = true;
+                            if(!skip){
+                                visitados[i] = true;
+                                padres[j++] = aux;
+                                queue.add(i);
                             }
-                        }
-                        if (!checkearSiEstaVisitado && !saturado) {
-                            queue.add(i);
                         }
                     }
                 }
-                j++;
-                if(visitados[visitados.length-1] != 1){
-                    corte1 = true;
-                    corte2 = true;
-                }
             }
-            j = 0;
-            while(!corte2) {
-                int indice = cantVertices - 1;
-                while (prev != -1) {
-                    auxList.add(visitados[indice]);
-                    indice = padres[indice];
+                auxList.add(1);
+                int indice = padres[(padres.length) - 1];
+                while (indice != 0) {
+                    auxList.add(indice);
+                    indice = padres[indice - 1];
                 }
-                List<Integer> flujos = new ArrayList<>();
-                for (int n = auxList.size() - 1; n == 0; n--) {
+                auxList.add(0);
+                List<Integer> flujos = new ArrayList<>(auxList.size() - 1);
+
+                for (int n = auxList.size() - 1; n > 0; n--) {
                     flujos.add((redResidual(auxList.get(n), auxList.get(n - 1))));
                 }
+
                 int flujo = flujos.get(0);
+
                 for (int m = 1; m < flujos.size() - 1; m++) {
                     flujo = Math.min(flujo, flujos.get(m));
                 }
-                flujoMax += flujo;
-                for (int p = auxList.size() - 1; p == 0; p--) {
-                    matrizFlujo[auxList.get(p)][auxList.get(p - 1)] = flujo;
+
+                for (int i = auxList.size() - 1; i > 0; i--) {
+                    agregarFlujoLado(auxList.get(i),auxList.get(i - 1), flujo);
                 }
+
+                flujoMax += flujo;
+
+                if (!visitados[1]) {
+                    corte1 = true;
+                }
+                padres = new int[cantVertices];
+                visitados = new boolean[cantVertices];
+                auxList = new ArrayList<>(1);
             }
-            padres = null;
-            visitados = null;
-        }
         return flujoMax;
     }
 
